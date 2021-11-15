@@ -98,17 +98,21 @@ services:
     networks:
       elastic:
         ipv4_address: 172.16.238.11
-  # grafana:
-  #   image: prom/grafana
-  #   container_name: grafana
-  #   ports:
-  #     - "9090:9090"
-  #   volumes:
-  #     - ./prometheus.yml:/etc/prometheus/prometheus.yml
-  #   command: ["--config.file", "/etc/prometheus/prometheus.yml", "--web.enable-lifecycle"]
-  #   networks:
-  #     elastic:
-  #       ipv4_address: 172.16.238.11           
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    environment:
+      - PROMETHEUS_URL=http://172.16.238.11:9090
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./prometheus.yml:/etc/grafana/grafana.ini
+      - ./SGW-Grafana-Dashboard.json:/etc/grafana/provisioning/dashboards/sgw.json
+      - ./config-datasource.yml:/etc/grafana/provisioning/datasources/config-datasource.yml
+      - ./config-dashboard.yml:/etc/grafana/provisioning/dashboards/config-dashboard.yml   
+    networks:
+      elastic:
+        ipv4_address: 172.16.238.12
         
 
 
