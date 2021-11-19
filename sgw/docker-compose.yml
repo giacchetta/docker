@@ -107,7 +107,6 @@ services:
       - "3000:3000"
     volumes:
       - ./prometheus.yml:/etc/grafana/grafana.ini
-      - ./SGW-Grafana-Dashboard.json:/etc/grafana/provisioning/dashboards/sgw.json
       - ./config-datasource.yml:/etc/grafana/provisioning/datasources/config-datasource.yml
       - ./config-dashboard.yml:/etc/grafana/provisioning/dashboards/config-dashboard.yml   
     networks:
