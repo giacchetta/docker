@@ -1,0 +1,150 @@
+version: '3'
+services:
+
+  init:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1
+    container_name: init
+    environment:
+      - node.name=init
+      - discovery.type=single-node
+      - cluster.name=elastic-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    entrypoint: ''
+    working_dir: /usr/share/elasticsearch/config/certs
+    command:
+      - /bin/bash
+      - -c
+      - |
+        elasticsearch-certutil ca --silent --pem --out $$(pwd)/ca.zip
+        unzip ca.zip
+        for i in 1 2 3;do elasticsearch-certutil cert --silent --pem --ca-cert $$(pwd)/ca/ca.crt --ca-key $$(pwd)/ca/ca.key --dns es0$$i --name es0$$i --out $$(pwd)/es0$$i.zip; unzip es0$$i.zip; done
+        exit 0
+    volumes:
+      - certs:/usr/share/elasticsearch/config/certs
+
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1
+    container_name: es01
+    depends_on:
+      - init
+    environment:
+      - node.name=es01
+      - cluster.name=elastic-cluster
+      - discovery.seed_hosts=es02,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=true
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.key=/usr/share/elasticsearch/config/certs/es01/es01.key
+      - xpack.security.transport.ssl.certificate=/usr/share/elasticsearch/config/certs/es01/es01.crt
+      - xpack.security.transport.ssl.certificate_authorities=/usr/share/elasticsearch/config/certs/ca/ca.crt
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.verification_mode=certificate
+      - xpack.security.http.ssl.key=/usr/share/elasticsearch/config/certs/es01/es01.key
+      - xpack.security.http.ssl.certificate=/usr/share/elasticsearch/config/certs/es01/es01.crt
+      - xpack.security.http.ssl.certificate_authorities=/usr/share/elasticsearch/config/certs/ca/ca.crt
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+      - certs:/usr/share/elasticsearch/config/certs
+    networks:
+      elastic-cluster:
+        ipv4_address: 172.16.239.2
+
+  es02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1
+    container_name: es02
+    depends_on:
+      - init
+    environment:
+      - node.name=es02
+      - cluster.name=elastic-cluster
+      - discovery.seed_hosts=es01,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=true
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.key=/usr/share/elasticsearch/config/certs/es02/es02.key
+      - xpack.security.transport.ssl.certificate=/usr/share/elasticsearch/config/certs/es02/es02.crt
+      - xpack.security.transport.ssl.certificate_authorities=/usr/share/elasticsearch/config/certs/ca/ca.crt
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.verification_mode=certificate
+      - xpack.security.http.ssl.key=/usr/share/elasticsearch/config/certs/es02/es02.key
+      - xpack.security.http.ssl.certificate=/usr/share/elasticsearch/config/certs/es02/es02.crt
+      - xpack.security.http.ssl.certificate_authorities=/usr/share/elasticsearch/config/certs/ca/ca.crt      
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data02:/usr/share/elasticsearch/data
+      - certs:/usr/share/elasticsearch/config/certs
+    networks:
+      elastic-cluster:
+        ipv4_address: 172.16.239.3
+
+  es03:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1
+    container_name: es03
+    depends_on:
+      - init    
+    environment:
+      - node.name=es03
+      - cluster.name=elastic-cluster
+      - discovery.seed_hosts=es01,es02
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=true
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.key=/usr/share/elasticsearch/config/certs/es03/es03.key
+      - xpack.security.transport.ssl.certificate=/usr/share/elasticsearch/config/certs/es03/es03.crt
+      - xpack.security.transport.ssl.certificate_authorities=/usr/share/elasticsearch/config/certs/ca/ca.crt
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.verification_mode=certificate
+      - xpack.security.http.ssl.key=/usr/share/elasticsearch/config/certs/es03/es03.key
+      - xpack.security.http.ssl.certificate=/usr/share/elasticsearch/config/certs/es03/es03.crt
+      - xpack.security.http.ssl.certificate_authorities=/usr/share/elasticsearch/config/certs/ca/ca.crt        
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data03:/usr/share/elasticsearch/data
+      - certs:/usr/share/elasticsearch/config/certs
+    networks:
+      elastic-cluster:
+        ipv4_address: 172.16.239.4
+
+volumes:
+  certs:
+    driver: local
+  data01:
+    driver: local
+  data02:
+    driver: local
+  data03:
+    driver: local
+
+networks:
+  elastic-cluster:
+    driver: bridge
+    enable_ipv6: false
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.239.0/24
+          gateway: 172.16.239.1
