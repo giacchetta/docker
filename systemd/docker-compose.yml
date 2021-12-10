@@ -1,0 +1,19 @@
+version: '3'
+services:
+  focal:
+    build:
+      context: .
+      dockerfile: focal.dockerfile
+    image: docker.io/giacchetta/systemd-ubuntu:focal
+    privileged: true
+    tmpfs:
+      - /tmp
+      - /run
+      - /run/lock
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - docker:/var/lib/docker
+
+volumes:
+  docker:
+    driver: local
