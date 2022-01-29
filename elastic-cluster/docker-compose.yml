@@ -2,7 +2,7 @@ version: '3'
 services:
 
   init:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.1
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.2
     container_name: init
     environment:
       - node.name=init
@@ -22,7 +22,10 @@ services:
       - |
         elasticsearch-certutil ca --silent --pem --out $$(pwd)/ca.zip
         unzip ca.zip
-        for i in 1 2 3;do elasticsearch-certutil cert --silent --pem --ca-cert $$(pwd)/ca/ca.crt --ca-key $$(pwd)/ca/ca.key --dns es0$$i --name es0$$i --out $$(pwd)/es0$$i.zip; unzip es0$$i.zip; done
+        elasticsearch-certutil cert --silent --pem --ca-cert $$(pwd)/ca/ca.crt --ca-key $$(pwd)/ca/ca.key --dns node --name node --out $$(pwd)/node.zip && unzip node.zip
+        elasticsearch-certutil cert --silent --pem --ca-cert $$(pwd)/ca/ca.crt --ca-key $$(pwd)/ca/ca.key --dns client --name client --out $$(pwd)/client.zip && unzip client.zip
+        elasticsearch-certutil cert --silent --pem --ca-cert $$(pwd)/ca/ca.crt --ca-key $$(pwd)/ca/ca.key --dns kibana --name kibana --out $$(pwd)/kibana.zip && unzip kibana.zip
+        #for i in 1 2 3;do elasticsearch-certutil cert --silent --pem --ca-cert $$(pwd)/ca/ca.crt --ca-key $$(pwd)/ca/ca.key --dns es0$$i --name es0$$i --out $$(pwd)/es0$$i.zip; unzip es0$$i.zip; done
         exit 0
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
